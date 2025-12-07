@@ -1,0 +1,26 @@
+#.gitignore for Python projects
+/.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.sqlite3
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.vscode/
+env/
+venv/
+ENV/
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
