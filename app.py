@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 # Try to import project modules
 try:
     from data_loader import IMAGES_DIR
+    from meal_predictor import get_recognizer, predict_meal
     import tensorflow as tf
 except ImportError as e:
     st.error(f"Error importing modules: {e}")
@@ -188,32 +189,40 @@ with tab1:
         
         if st.button("🔍 Analyser le repas", use_container_width=True):
             with st.spinner("Analyse en cours..."):
-                # Prepare image for model
-                img_resized = cv2.resize(uploaded_image, (128, 128))
-                img_array = np.expand_dims(img_resized, axis=0) / 255.0
+                # Get recognizer instance
+                recognizer = get_recognizer()
                 
-                # Mock prediction (since model might not be trained)
-                # In production, use: prediction = model.predict(img_array)
-                # For now, we'll create a realistic simulation
+                # Check if model is loaded
+                if not recognizer.model_loaded:
+                    st.error("❌ Modèle non trouvé!")
+                    st.warning("""
+                    Le modèle CNN n'a pas été entraîné. Pour utiliser la reconnaissance réelle:
+                    
+                    1. Ouvrez PowerShell dans le dossier OCR
+                    2. Exécutez: `.venv\\Scripts\\python.exe train_model.py`
+                    3. Attendez la fin de l'entraînement (peut prendre 10-30 minutes)
+                    4. Relancez l'app Streamlit
+                    
+                    **Ou** utilisez cette commande en arrière-plan:
+                    ```
+                    .venv\\Scripts\\python.exe train_model.py &
+                    ```
+                    """)
+                    st.stop()
                 
-                # Simulated meal types and their typical calories
-                meal_types_db = {
-                    0: ("Salade Verte", 150),
-                    1: ("Poulet Grillé", 350),
-                    2: ("Pâtes Carbonara", 450),
-                    3: ("Pizza Margherita", 280),
-                    4: ("Burger", 550),
-                    5: ("Poisson Blanc", 200),
-                    6: ("Riz Pilaf", 300),
-                    7: ("Soupe Minestrone", 120),
-                    8: ("Steak Frites", 650),
-                    9: ("Tarte aux Pommes", 280),
-                }
+                # Make prediction
+                result = recognizer.predict(uploaded_image)
                 
-                # Simulate prediction with some randomness
-                predicted_index = np.random.randint(0, len(meal_types_db))
-                dish_name, calories = meal_types_db[predicted_index]
-                confidence = np.random.uniform(60, 99)
+                if result['success']:
+                    dish_name = result['meal']
+                    confidence = result['confidence']
+                    top_predictions = result['top_predictions']
+                else:
+                    st.error("❌ Erreur lors de la prédiction")
+                    st.stop()
+                
+                # Estimate calories
+                calories = int(recognizer.get_meal_calories(dish_name))
                 
                 # --- ANALYSIS RESULTS ---
                 st.subheader("📊 Résultats de l'analyse")
